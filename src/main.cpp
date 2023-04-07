@@ -159,21 +159,31 @@ int main() {
     // configure global opengl state
     // -----------------------------
     glEnable(GL_DEPTH_TEST);
+    //face cull
+    glEnable(GL_CULL_FACE);
+    glCullFace(GL_BACK);
+    //blending
+    glEnable(GL_BLEND);
+    glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
 
-    // build and compile shaders
-    // -------------------------
+    // ----------------------------------------------------build and compile shaders------------------------------------------------------------------------
     Shader ourShader("resources/shaders/ourShader.vs", "resources/shaders/ourShader.fs");
     Shader skyboxShader("resources/shaders/skybox.vs", "resources/shaders/skybox.fs");
 
-
-    // load models
-    // -----------
+    // --------------------------------------------------------load models------------------------------------------------------------------------------
+    //parking model
     // flip rextures on
     stbi_set_flip_vertically_on_load(true);
     Model ourModel("resources/objects/parkingObj/untitled.obj");
     ourModel.SetShaderTextureNamePrefix("material.");
     // flip rextures on
     stbi_set_flip_vertically_on_load(false);
+
+    //car model
+    Model carModel("resources/objects/car/SCI_FRS_13_HD.obj");
+    carModel.SetShaderTextureNamePrefix("material.");
+
+
 
     //-------------------------Seting skybox vertices---------------------------
     float skyboxVertices[] = {
@@ -256,8 +266,6 @@ int main() {
     pointLight.linear = 0.09f;
     pointLight.quadratic = 0.032f;
 
-
-
     // render loop
     // -----------
     while (!glfwWindowShouldClose(window)) {
@@ -295,11 +303,22 @@ int main() {
         glm::mat4 view = programState->camera.GetViewMatrix();
         ourShader.setMat4("projection", projection);
         ourShader.setMat4("view", view);
-        // render the loaded model
 
+        // render the loaded model
         // parking
         glm::mat4 modelParking = glm::mat4(1.0f);
+        modelParking = glm::translate(modelParking,glm::vec3(3.5f,0.0f,1.2f));
         modelParking = glm::scale(modelParking, glm::vec3(0.02f));
+        // obj
+        glm::mat4 modelCar = glm::mat4(1.0f);
+        modelCar = glm::rotate(modelCar,glm::radians(-currentFrame*50.0f), glm::vec3(0.0f ,1.0f, 0.0f));
+        modelCar = glm::translate(modelCar,glm::vec3(0.0f,0.0f,1.4f));
+        modelCar = glm::scale(modelCar, glm::vec3(0.05));
+        modelCar = glm::rotate(modelCar,glm::radians(-currentFrame*50.0f), glm::vec3(0.0f ,1.0f, 0.0f));
+
+        ourShader.setMat4("model", modelCar);
+        carModel.Draw(ourShader);
+
 
         //------------------Draw skybox--------------------------------------
         ourShader.setMat4("model", modelParking);
@@ -356,6 +375,7 @@ void processInput(GLFWwindow *window) {
         programState->camera.ProcessKeyboard(LEFT, deltaTime);
     if (glfwGetKey(window, GLFW_KEY_D) == GLFW_PRESS)
         programState->camera.ProcessKeyboard(RIGHT, deltaTime);
+
 }
 
 // glfw: whenever the window size changed (by OS or user resize) this callback function executes
@@ -400,10 +420,6 @@ void DrawImGui(ProgramState *programState) {
         static float f = 0.0f;
         ImGui::Begin("Hello window");
         ImGui::Text("Hello text");
-        ImGui::SliderFloat("Float slider", &f, 0.0, 1.0);
-        ImGui::ColorEdit3("Background color", (float *) &programState->clearColor);
-        ImGui::DragFloat3("Backpack position", (float*)&programState->backpackPosition);
-        ImGui::DragFloat("Backpack scale", &programState->backpackScale, 0.05, 0.1, 4.0);
 
         ImGui::DragFloat("pointLight.constant", &programState->pointLight.constant, 0.05, 0.0, 1.0);
         ImGui::DragFloat("pointLight.linear", &programState->pointLight.linear, 0.05, 0.0, 1.0);
@@ -433,6 +449,7 @@ void key_callback(GLFWwindow *window, int key, int scancode, int action, int mod
             glfwSetInputMode(window, GLFW_CURSOR, GLFW_CURSOR_NORMAL);
         } else {
             glfwSetInputMode(window, GLFW_CURSOR, GLFW_CURSOR_DISABLED);
+            programState->CameraMouseMovementUpdateEnabled = true;
         }
     }
 }
